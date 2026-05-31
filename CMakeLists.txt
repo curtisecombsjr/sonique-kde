@@ -48,8 +48,14 @@ qt_add_qml_module(sonique-kde
     QML_FILES
         qml/Main.qml
         qml/AmpView.qml
+        qml/VisView.qml
         qml/components/RingButton.qml
         qml/components/LcdReadout.qml
+        qml/components/MetallicPod.qml
+        qml/components/MetallicWell.qml
+        qml/components/CircularVisualizer.qml
+        qml/components/NumberLcd.qml
+        qml/components/CenterConsole.qml
 )
 
 # The auto-generated QML type registration TU does `#include <AudioEngine.h>`

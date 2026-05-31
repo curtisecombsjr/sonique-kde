@@ -1,8 +1,11 @@
-// Main — the top-level frameless window and view state machine.
+// Main — top-level frameless window with view morph state machine.
 //
-// Sonique's three view modes (Amp / Nav / Vis) morph into one another via
-// resize+crossfade. For the MVP we ship only AmpView; the State machine is
-// scaffolded so adding Nav/Vis in Phase 2 is additive, not a rewrite.
+// Default view is Vis (Curtis's favorite). Clicking the "nav" text or the
+// right end-cap of the AmpView pill toggles between Vis and Amp. The
+// window animates its size to match the active view's implicit dimensions.
+//
+// Nav View (playlist editor) is scaffolded but not implemented yet —
+// Phase 2.5.
 
 import QtQuick
 import QtQuick.Window
@@ -10,17 +13,17 @@ import app.sonique
 
 Window {
     id: root
-    width: ampView.implicitWidth
-    height: ampView.implicitHeight
+    width: 280
+    height: 460
     visible: true
     title: qsTr("sonique-kde")
-
-    // Frameless, transparent — the skin paints its own shape and shadow.
     flags: Qt.FramelessWindowHint | Qt.Window
     color: "transparent"
 
-    // Drag the window by its body (compositor takes over on Wayland via
-    // startSystemMove(); this is the right way under KWin).
+    // Smooth size morphs when switching views.
+    Behavior on width  { NumberAnimation { duration: 320; easing.type: Easing.InOutCubic } }
+    Behavior on height { NumberAnimation { duration: 320; easing.type: Easing.InOutCubic } }
+
     MouseArea {
         anchors.fill: parent
         acceptedButtons: Qt.LeftButton
@@ -31,32 +34,58 @@ Window {
         }
     }
 
-    // View-morph state machine lives on an Item (Window can't host states).
-    Item {
-        id: views
-        anchors.fill: parent
-        state: "amp"
-        states: [
-            State { name: "amp" },
-            State { name: "nav" }, // Phase 2
-            State { name: "vis" }  // Phase 2
-        ]
+    property string mode: "vis"
 
+    StackLayout2 {  // see comment below — using an Item, not QtQuick.Layouts
+        id: layer
+        anchors.fill: parent
+        visibleView: root.mode
+    }
+
+    // Inline component: stacks Vis + Amp, fades between them.
+    component StackLayout2 : Item {
+        property string visibleView: "vis"
+
+        VisView {
+            id: visView
+            anchors.fill: parent
+            opacity: parent.visibleView === "vis" ? 1.0 : 0.0
+            visible: opacity > 0.01
+            Behavior on opacity { NumberAnimation { duration: 260 } }
+            onModeToggled: root.toggleMode()
+        }
         AmpView {
             id: ampView
             anchors.centerIn: parent
-            opacity: views.state === "amp" ? 1.0 : 0.0
-            Behavior on opacity { NumberAnimation { duration: 220; easing.type: Easing.OutCubic } }
+            opacity: parent.visibleView === "amp" ? 1.0 : 0.0
+            visible: opacity > 0.01
+            Behavior on opacity { NumberAnimation { duration: 260 } }
+            onModeToggled: root.toggleMode()
         }
     }
 
-    // Keyboard shortcuts — match Sonique's hotkeys.htm where they don't clash
-    // with KDE global ones. Space=play/pause is universal.
+    function toggleMode() {
+        if (mode === "vis") {
+            mode = "amp";
+            root.width = 360;
+            root.height = 90;
+        } else {
+            mode = "vis";
+            root.width = 280;
+            root.height = 460;
+        }
+    }
+
+    // Hotkeys.
     Shortcut {
         sequence: "Space"
         onActivated: AudioEngine.state === AudioEngine.Playing
             ? AudioEngine.pause()
             : AudioEngine.play()
+    }
+    Shortcut {
+        sequence: "M"
+        onActivated: root.toggleMode()
     }
     Shortcut {
         sequence: "Esc"
