@@ -1,0 +1,35 @@
+# Build
+build/
+build-*/
+*.o
+*.so
+*.a
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+.cache/
+
+# Qt
+*.user
+*.user.*
+moc_*.cpp
+qrc_*.cpp
+ui_*.h
+
+# IDE
+.vscode/
+.idea/
+.kdev4/
+*.kdev4
+
+# OS
+.DS_Store
+Thumbs.db
+*.swp
+*~
+
+# Reference screenshots (kept locally for skin work; not committed — copyright caution
+# until I'm sure they're our own assets). Override per-file with `git add -f` if needed.
+reference/*.png
+reference/*.jpg
