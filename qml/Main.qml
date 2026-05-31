@@ -13,8 +13,8 @@ import app.sonique
 
 Window {
     id: root
-    width: 280
-    height: 460
+    width: 270
+    height: 340
     visible: true
     title: qsTr("sonique-kde")
     flags: Qt.FramelessWindowHint | Qt.Window
@@ -71,8 +71,8 @@ Window {
             root.height = 90;
         } else {
             mode = "vis";
-            root.width = 280;
-            root.height = 460;
+            root.width = 270;
+            root.height = 340;
         }
     }
 

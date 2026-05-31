@@ -1,11 +1,9 @@
 // NumberLcd — the bottom well's LCD readout: track number, time, title.
-//
-// Visual style: deep blue/teal phosphor backplate, faux-LED green and cyan
-// digits, scanline overlay. Layout mirrors the reference's bottom-well:
-// big "008" track number top-left, "00:00:00" time below it, multi-line
-// track title on the right.
+// Rendered as a Shape with a radial gradient backplate so it actually
+// looks like a recessed phosphor screen instead of a flat rectangle.
 
 import QtQuick
+import QtQuick.Shapes
 
 Item {
     id: lcd
@@ -29,15 +27,32 @@ Item {
         return n < 10 ? "00" + n : n < 100 ? "0" + n : "" + n;
     }
 
-    // Phosphor backplate (linear-only gradient on Rectangle in Qt 6;
-    // overlaid soft-edge to fake the radial falloff).
-    Rectangle {
+    // Phosphor backplate — proper radial via Shape.
+    Shape {
         anchors.fill: parent
-        radius: width / 2
-        gradient: Gradient {
-            GradientStop { position: 0.0; color: "#0a3848" }
-            GradientStop { position: 0.5; color: "#06212a" }
-            GradientStop { position: 1.0; color: "#020a10" }
+        antialiasing: true
+
+        ShapePath {
+            strokeWidth: 0
+            fillGradient: RadialGradient {
+                centerX: lcd.width / 2
+                centerY: lcd.height / 2
+                centerRadius: Math.max(lcd.width, lcd.height) / 2
+                GradientStop { position: 0.0; color: "#0a4858" }
+                GradientStop { position: 0.6; color: "#06212a" }
+                GradientStop { position: 1.0; color: "#010608" }
+            }
+            startX: lcd.width; startY: lcd.height / 2
+            PathArc {
+                x: 0; y: lcd.height / 2
+                radiusX: lcd.width / 2; radiusY: lcd.height / 2
+                direction: PathArc.Clockwise
+            }
+            PathArc {
+                x: lcd.width; y: lcd.height / 2
+                radiusX: lcd.width / 2; radiusY: lcd.height / 2
+                direction: PathArc.Clockwise
+            }
         }
     }
 
@@ -50,14 +65,16 @@ Item {
         }
         text: lcd.pad3(lcd.trackNumber)
         color: "#9cf0ff"
-        font.pixelSize: parent.width * 0.18
+        font.pixelSize: parent.width * 0.20
         font.family: "monospace"
         font.bold: true
+        style: Text.Raised
+        styleColor: "#063848"
     }
     Text {
         anchors {
             left: trackNumText.left
-            top: trackNumText.bottom; topMargin: 4
+            top: trackNumText.bottom; topMargin: 6
         }
         text: lcd.fmt(lcd.positionMs)
         color: "#5cd4e8"
@@ -85,8 +102,7 @@ Item {
         model: Math.floor(lcd.height / 3)
         delegate: Rectangle {
             required property int index
-            x: 0
-            y: index * 3
+            x: 0; y: index * 3
             width: lcd.width
             height: 1
             color: Qt.rgba(0, 0, 0, 0.18)

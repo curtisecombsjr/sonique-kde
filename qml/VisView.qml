@@ -1,142 +1,114 @@
-// VisView — the iconic stacked-pod view. Curtis's favorite.
+// VisView — now using the actual Sonique screenshot as the skin canvas.
 //
-// Composition (top to bottom inside the metallic pod):
-//   * MetallicWell containing CircularVisualizer (green phosphor)
-//   * CenterConsole spine (nav | chrome ball | volume knob)
-//   * MetallicWell containing NumberLcd (track # / time / title)
-//   * Small play button extruding from the bottom tongue
+// The 270x340 PNG at assets/skin/vis-pod.png is the pod with the background
+// flood-filled to transparent. We layer dynamic elements on top of it:
+//   * Live LCD digits over the bottom-well numerals
+//   * Live track title over the bottom-well title region
+//   * Invisible click targets over nav / play / volume-knob hotspots
 //
-// Layout is anchored, not absolute — proportions tune by changing the few
-// margin/spacing values below, not by repositioning every child.
+// The visualizer in the green well is currently the frozen pixels from the
+// screenshot. Phase 2.5 will punch a transparent hole there and put
+// CircularVisualizer behind it for real-time animation.
 
 import QtQuick
-import "components"
 import app.sonique
 
 Item {
     id: vis
-    implicitWidth: 280
-    implicitHeight: 460
+    implicitWidth: 270
+    implicitHeight: 340
 
     signal modeToggled()
 
-    MetallicPod {
-        id: pod
+    // --- The skin ---------------------------------------------------------
+    Image {
+        id: skin
         anchors.fill: parent
+        source: "qrc:/qt/qml/app/sonique/assets/skin/vis-pod.png"
+        fillMode: Image.PreserveAspectFit
+        smooth: true
+        mipmap: true
     }
 
-    // --- Top well: visualizer --------------------------------------------
-    MetallicWell {
-        id: visWell
-        diameter: 190
-        anchors {
-            horizontalCenter: parent.horizontalCenter
-            top: parent.top; topMargin: 36
+    // --- Dynamic LCD overlays --------------------------------------------
+    // Pixel positions measured from vis-pod.png at native 270x340.
+    // Track number "008" sits around x=70..115, y=232..258 (rough).
+    Text {
+        x: 73; y: 232
+        text: {
+            const n = 8;  // playlist Phase 2.5
+            return n < 10 ? "00" + n : n < 100 ? "0" + n : "" + n;
         }
-
-        CircularVisualizer {
-            playing: AudioEngine.state === AudioEngine.Playing
+        color: "#9cf0ff"
+        font.pixelSize: 22
+        font.family: "monospace"
+        font.bold: true
+    }
+    Text {
+        x: 73; y: 256
+        text: {
+            let p = AudioEngine.position;
+            let s = Math.floor(p / 1000);
+            const h = Math.floor(s / 3600); s -= h * 3600;
+            const m = Math.floor(s / 60); s -= m * 60;
+            const pad = n => (n < 10 ? "0" : "") + n;
+            return pad(h) + ":" + pad(m) + ":" + pad(s);
         }
-
-        // Vertical "sonique" wordmark on the well's left edge.
+        color: "#5cd4e8"
+        font.pixelSize: 12
+        font.family: "monospace"
+    }
+    // Track title — covers the screenshot's "test-tone-24bit-44k.wav" text.
+    Rectangle {
+        x: 118; y: 248
+        width: 80; height: 30
+        color: "#020a10"  // covers the static text underneath
         Text {
-            anchors {
-                left: parent.left; leftMargin: 8
-                verticalCenter: parent.verticalCenter
-            }
-            text: "sonique"
-            color: "#9cf0ff"
-            font.pixelSize: 11
-            font.family: "monospace"
-            font.italic: true
-            rotation: -90
-            transformOrigin: Item.Center
-        }
-
-        // Three small utility icons top-right.
-        Row {
-            anchors {
-                right: parent.right; rightMargin: 14
-                top: parent.top; topMargin: 14
-            }
-            spacing: 3
-            Repeater {
-                model: ["i", "?", "×"]
-                delegate: Rectangle {
-                    required property string modelData
-                    width: 12; height: 12; radius: 6
-                    color: "#0a1822"
-                    border.color: "#3da1ff"; border.width: 1
-                    Text {
-                        anchors.centerIn: parent
-                        text: parent.modelData
-                        color: "#9cf0ff"
-                        font.pixelSize: 8
-                        font.family: "monospace"
-                    }
-                }
-            }
-        }
-    }
-
-    // --- Center console ---------------------------------------------------
-    CenterConsole {
-        id: spine
-        anchors {
-            left: parent.left; right: parent.right
-            top: visWell.bottom; topMargin: -4
-        }
-        volume: AudioEngine.volume
-        onVolumeChanged: AudioEngine.volume = volume
-        onNavClicked: vis.modeToggled()
-    }
-
-    // --- Bottom well: LCD readout ----------------------------------------
-    MetallicWell {
-        id: lcdWell
-        diameter: 190
-        rimColor: "#3da1ff"
-        anchors {
-            horizontalCenter: parent.horizontalCenter
-            top: spine.bottom; topMargin: -4
-        }
-
-        NumberLcd {
-            trackNumber: 8  // placeholder — playlist Phase 2.5
-            positionMs: AudioEngine.position
-            durationMs: AudioEngine.duration
-            title: AudioEngine.title.length > 0
+            anchors.fill: parent
+            anchors.margins: 2
+            text: AudioEngine.title.length > 0
                 ? AudioEngine.title
                 : "— drop a file —"
+            color: "#9cf0ff"
+            font.pixelSize: 9
+            font.family: "monospace"
+            wrapMode: Text.WrapAtWordBoundaryOrAnywhere
+            horizontalAlignment: Text.AlignHCenter
+            verticalAlignment: Text.AlignVCenter
         }
     }
 
-    // --- Play button extruding from bottom tongue ------------------------
-    Rectangle {
-        anchors {
-            horizontalCenter: parent.horizontalCenter
-            top: lcdWell.bottom; topMargin: 0
-        }
-        width: 28; height: 28; radius: 14
-        gradient: Gradient {
-            GradientStop { position: 0.0; color: "#c4f0a0" }
-            GradientStop { position: 0.5; color: "#5aa838" }
-            GradientStop { position: 1.0; color: "#1a3008" }
-        }
-        border.color: "#0a0b0d"; border.width: 1
+    // --- Click targets / interactivity (invisible) -----------------------
 
-        Text {
-            anchors.centerIn: parent
-            text: AudioEngine.state === AudioEngine.Playing ? "❚❚" : "▶"
-            color: "#0a1a04"
-            font.pixelSize: 13
-            font.bold: true
-        }
+    // nav button — toggles to Amp View
+    MouseArea {
+        // "nav" text in the screenshot sits around (76, 178)..(105, 196)
+        x: 70; y: 175
+        width: 38; height: 22
+        cursorShape: Qt.PointingHandCursor
+        onClicked: vis.modeToggled()
+    }
 
-        TapHandler {
-            onTapped: AudioEngine.state === AudioEngine.Playing
-                ? AudioEngine.pause()
-                : AudioEngine.play()
+    // Volume knob (yellow) — mouse wheel adjusts volume
+    Item {
+        x: 178; y: 178
+        width: 28; height: 28
+        WheelHandler {
+            onWheel: (event) => {
+                let step = event.angleDelta.y > 0 ? 0.05 : -0.05;
+                AudioEngine.volume = Math.max(0, Math.min(1, AudioEngine.volume + step));
+            }
         }
+    }
+
+    // Play button (green, at bottom) — toggles play/pause
+    MouseArea {
+        // Play button sits around (78, 305)..(105, 332) in vis-pod.png
+        x: 76; y: 302
+        width: 32; height: 32
+        cursorShape: Qt.PointingHandCursor
+        onClicked: AudioEngine.state === AudioEngine.Playing
+            ? AudioEngine.pause()
+            : AudioEngine.play()
     }
 }

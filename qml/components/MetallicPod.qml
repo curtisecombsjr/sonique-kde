@@ -1,19 +1,34 @@
-// MetallicPod — the asymmetric teardrop pod body for Vis View.
+// MetallicPod — the asymmetric teardrop pod body for Vis View, rendered
+// with QtQuick.Shapes so the body fill is a proper LinearGradient
+// (vertical, with multiple stops simulating brushed metal lighting), and
+// with a MultiEffect drop shadow under it.
 //
-// Shape outline approximates the reference: bulges around the top and bottom
-// wells, narrow waist between, slightly rounded top, small tongue at the
-// bottom that the play button extrudes through. Filled with a brushed-metal
-// gradient + a few highlight/shadow strokes to evoke milled aluminum.
+// Screws are now Spheres for proper roundness.
 
 import QtQuick
 import QtQuick.Shapes
+import QtQuick.Effects
 
 Item {
     id: pod
     implicitWidth: 280
     implicitHeight: 460
 
+    // Drop shadow under the body.
+    MultiEffect {
+        source: bodyShape
+        anchors.fill: bodyShape
+        shadowEnabled: true
+        shadowBlur: 0.7
+        shadowVerticalOffset: 4
+        shadowHorizontalOffset: 0
+        shadowColor: "#000000"
+        shadowOpacity: 0.55
+    }
+
+    // The body shape itself.
     Shape {
+        id: bodyShape
         anchors.fill: parent
         antialiasing: true
         layer.enabled: true
@@ -24,53 +39,46 @@ Item {
             strokeWidth: 1.5
             fillGradient: LinearGradient {
                 x1: 0; y1: 0; x2: 0; y2: pod.height
-                GradientStop { position: 0.00; color: "#3a3f48" }
-                GradientStop { position: 0.20; color: "#252830" }
-                GradientStop { position: 0.50; color: "#191b21" }
-                GradientStop { position: 0.80; color: "#252830" }
+                GradientStop { position: 0.00; color: "#4a5058" }
+                GradientStop { position: 0.06; color: "#5a6068" }
+                GradientStop { position: 0.18; color: "#2a2e35" }
+                GradientStop { position: 0.50; color: "#1c1f24" }
+                GradientStop { position: 0.82; color: "#2a2e35" }
+                GradientStop { position: 0.94; color: "#404650" }
                 GradientStop { position: 1.00; color: "#13151a" }
             }
-            // Counterclockwise from top-left rounded shoulder.
             startX: 38; startY: 16
-
-            // Top edge.
             PathLine { x: pod.width - 38; y: 16 }
-            // Upper-right shoulder curving down around the top well.
             PathCubic {
                 x: pod.width - 8; y: 140
                 control1X: pod.width - 6; control1Y: 24
                 control2X: pod.width - 6; control2Y: 80
             }
             PathCubic {
-                x: pod.width - 8; y: 240
+                x: pod.width - 10; y: 240
                 control1X: pod.width - 4; control1Y: 180
                 control2X: pod.width - 4; control2Y: 220
             }
-            // Right side curving out around the bottom well.
             PathCubic {
                 x: pod.width - 14; y: 400
                 control1X: pod.width - 2; control1Y: 280
                 control2X: pod.width - 4; control2Y: 360
             }
-            // Bottom-right corner.
             PathCubic {
                 x: pod.width / 2 + 28; y: pod.height - 12
                 control1X: pod.width - 30; control1Y: pod.height - 16
                 control2X: pod.width / 2 + 60; control2Y: pod.height - 10
             }
-            // Bottom tongue (small protrusion the play button sits on).
             PathLine { x: pod.width / 2 + 22; y: pod.height - 4 }
             PathLine { x: pod.width / 2 - 22; y: pod.height - 4 }
             PathLine { x: pod.width / 2 - 28; y: pod.height - 12 }
-            // Bottom-left corner.
             PathCubic {
                 x: 14; y: 400
                 control1X: pod.width / 2 - 60; control1Y: pod.height - 10
                 control2X: 30; control2Y: pod.height - 16
             }
-            // Left side back up, mirror of right.
             PathCubic {
-                x: 8; y: 240
+                x: 10; y: 240
                 control1X: 4; control1Y: 360
                 control2X: 2; control2Y: 280
             }
@@ -87,29 +95,44 @@ Item {
         }
     }
 
-    // Six rivet/screw heads at structural points — purely decorative.
+    // Highlight stroke along the upper edge for a beveled look.
+    Shape {
+        anchors.fill: parent
+        antialiasing: true
+        opacity: 0.35
+        ShapePath {
+            strokeColor: "#c8d0dc"
+            strokeWidth: 1
+            fillColor: "transparent"
+            startX: 40; startY: 18
+            PathLine { x: pod.width - 40; y: 18 }
+        }
+    }
+
+    // Screw heads as small spheres for true roundness.
     Repeater {
         model: [
-            { x: 18, y: 18 },
-            { x: pod.width - 30, y: 18 },
-            { x: 6, y: pod.height / 2 - 6 },
-            { x: pod.width - 18, y: pod.height / 2 - 6 },
-            { x: 22, y: pod.height - 30 },
-            { x: pod.width - 34, y: pod.height - 30 }
+            { x: 16, y: 16 },
+            { x: pod.width - 32, y: 16 },
+            { x: 4, y: pod.height / 2 - 8 },
+            { x: pod.width - 20, y: pod.height / 2 - 8 },
+            { x: 20, y: pod.height - 32 },
+            { x: pod.width - 36, y: pod.height - 32 }
         ]
-        delegate: Rectangle {
+        delegate: Sphere {
             required property var modelData
             x: modelData.x; y: modelData.y
-            width: 8; height: 8; radius: 4
-            color: "#3a4048"
-            border.color: "#0a0b0d"
-            border.width: 1
-            // Crosshead slot.
+            diameter: 10
+            color0: "#9098a4"
+            color1: "#3a4048"
+            color2: "#0a0c10"
+            highlightOpacity: 0.55
             Rectangle {
                 anchors.centerIn: parent
-                width: 5; height: 1
+                width: 6; height: 1
                 color: "#0a0b0d"
-                opacity: 0.7
+                opacity: 0.9
+                rotation: 35
             }
         }
     }

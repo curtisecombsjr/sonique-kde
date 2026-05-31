@@ -56,6 +56,9 @@ qt_add_qml_module(sonique-kde
         qml/components/CircularVisualizer.qml
         qml/components/NumberLcd.qml
         qml/components/CenterConsole.qml
+        qml/components/Sphere.qml
+    RESOURCES
+        assets/skin/vis-pod.png
 )
 
 # The auto-generated QML type registration TU does `#include <AudioEngine.h>`
